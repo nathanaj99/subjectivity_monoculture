@@ -379,3 +379,172 @@ denom = np.outer(std, std)
 with np.errstate(divide='ignore', invalid='ignore'):
     R_1d_hf = C / denom
     R_1d_hf[denom == 0] = 0.0
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.gridspec import GridSpec
+
+# ----- your settings -----
+vmin, vmax = -0.2, 0.6
+cmap_name = "RdBu_r"
+
+# HELM (first 3)
+data_list_helm = [excess, capa, R, R_1d]
+titles_helm = ["Kim et al.", "Goel et al.", r"IRT-0.5", "IRT-1"]
+
+# HF (last 3)
+data_list_hf = [
+    excess_hf.to_numpy()[:100, :100],
+    capa_hf.to_numpy()[:100, :100],
+    R_hf[:100, :100],
+    R_1d_hf[:100, :100],
+]
+titles_hf = ["Kim et al.", "Goel et al.", r"IRT-0.5", "IRT-1"]
+
+data_list = data_list_helm + data_list_hf
+titles = titles_helm + titles_hf
+
+# ----- layout: 6 plots + colorbar, with a spacer column between 3 and 4 -----
+fig = plt.figure(figsize=(30, 4), constrained_layout=False)
+
+# columns: [0][1][2][spacer][3][4][5][colorbar]
+# make spacer a bit wide; make cbar slim
+gs = GridSpec(
+    1, 10, figure=fig,
+    width_ratios=[1, 1, 1, 1, 0.005, 1, 1, 1, 1, 0.08],
+    wspace=0.03
+)
+
+axes = []
+axes.append(fig.add_subplot(gs[0, 0]))
+axes.append(fig.add_subplot(gs[0, 1]))
+axes.append(fig.add_subplot(gs[0, 2]))
+axes.append(fig.add_subplot(gs[0, 3]))
+# gs[0, 3] is the spacer (unused)
+# axes.append(fig.add_subplot(gs[0, 4]))
+axes.append(fig.add_subplot(gs[0, 5]))
+axes.append(fig.add_subplot(gs[0, 6]))
+axes.append(fig.add_subplot(gs[0, 7]))
+axes.append(fig.add_subplot(gs[0, 8]))
+cax = fig.add_subplot(gs[0, 9])  # colorbar axis
+
+# ----- draw heatmaps (no individual colorbars) -----
+for ax, data, title in zip(axes, data_list, titles):
+    arr = np.asarray(data)
+
+    # set diagonal to NaN
+    np.fill_diagonal(arr, np.nan)
+
+    sns.heatmap(
+        arr,
+        ax=ax,
+        cmap=cmap_name,
+        center=0,
+        square=True,
+        vmin=vmin,
+        vmax=vmax,
+        cbar=False,
+        xticklabels=False,
+        yticklabels=False
+    )
+    ax.set_title(title, fontsize=22)
+    ax.set_xlabel("")
+    ax.set_ylabel("")
+
+# ----- one shared colorbar on the right -----
+mappable = axes[0].collections[0]
+cbar = fig.colorbar(mappable, cax=cax)
+
+# make tick labels larger
+cbar.ax.tick_params(labelsize=16)
+
+cbar.ax.text(
+    -2.5, 1.15,              # (x, y) in axes coords
+    "Correlation",
+    transform=cbar.ax.transAxes,
+    ha="left",
+    va="top",
+    fontsize=19
+)
+
+# cbar.ax.set_title(
+#     "Correlation",
+#     fontsize=20,
+#     pad=15
+# )
+
+# add colorbar label
+# cbar.set_label(
+#     "Correlation",
+#     fontsize=16,
+#     rotation=90,
+#     labelpad=10
+# )
+
+# ----- dataset labels (bold, rotated) -----
+# Put HELM just left of the first panel; HF just left of the 4th panel
+# axes[0].text(
+#     -0.05, 0.5, "HELM",
+#     transform=axes[0].transAxes,
+#     rotation=90,
+#     va="center", ha="center",
+#     fontweight="bold", fontsize=18
+# )
+# axes[4].text(
+#     -0.05, 0.5, "HF",
+#     transform=axes[4].transAxes,
+#     rotation=90,
+#     va="center", ha="center",
+#     fontweight="bold", fontsize=18
+# )
+
+# -----------------------
+# Panel labels (a) and (b)
+# -----------------------
+axes[0].text(
+    0.02, 1.22, "(a) HELM",
+    transform=axes[0].transAxes,
+    ha="left", va="top",
+    fontsize=22, fontweight="bold"
+)
+axes[4].text(
+    0.02, 1.22, "(b) HF",
+    transform=axes[4].transAxes,
+    ha="left", va="top",
+    fontsize=22, fontweight="bold"
+)
+
+# HELM: first three subplots
+add_group_brace(
+    fig,
+    y_offset=-0.02,
+    text_offset=-0.03,
+    axes_group=axes[0:3],
+    text="No item-level heterogeneity"
+)
+
+# HF: first three subplots in panel (b)
+add_group_brace(
+    fig,
+    y_offset=-0.02,
+    text_offset=-0.03,
+    axes_group=axes[4:7],
+    text="No item-level heterogeneity"
+)
+
+
+
+# ----- vertical delimiter between panel 3 and 4 -----
+# Draw it in figure coordinates so it spans the full heatmap height region.
+fig.canvas.draw()  # ensure positions are computed
+bbox3 = axes[3].get_position()
+bbox4 = axes[4].get_position()
+
+x = (bbox3.x1 + bbox4.x0) / 2.0  # center of the spacer gap
+y0 = min(bbox3.y0, bbox4.y0) - 0.05
+y1 = max(bbox3.y1, bbox4.y1) + 0.05
+
+line = plt.Line2D([x, x], [y0, y1], transform=fig.transFigure, linewidth=2)
+fig.add_artist(line)
+plt.savefig('figs/fig6.png', bbox_inches='tight')
+plt.show()
