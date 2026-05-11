@@ -12,9 +12,12 @@ The following describes the structure of our scripts:
 ```
 scripts
 ├── experiments
-│   ├── irt: Inferring latent parameters of MIRT model, see Appendix C.1 for details
+│   ├── acsincome_models.py: Fitting various predictive models on ACSIncome.
+│   ├── infer_q_d.py: Inferring latent parameters of IRT model (K=1), see Appendix C.1 for deta
+│   ├── infer_q_d_multidimensional.py: Inferring latent parameters of MIRT model, see Appendix C.1 for details
+│   ├── population_relativity.py: Inferring IRT model for experiments in Fig 3
 ├── analysis
-│   ├── fig#.py
-├── slurm
-│   ├── fig#.sh: set of experiments used to run the corresponding analysis script
+│   ├── fig#.py: Script to visualize figures
 ```
+
+All scripts can be done using CPUs, though one can speed up some of the inference using a GPU as well.
