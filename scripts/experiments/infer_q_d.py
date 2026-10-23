@@ -515,7 +515,7 @@ def fit_kernel_latent_stream(
         item_chunk=256,    # items per sub-batch (B)
         model_block=128,   # models per tile (b)
         lr=1e-3, max_iter=200,
-        device='cuda',
+        device='cuda' if torch.cuda.is_available() else 'cpu',
         history=None):
 
     """

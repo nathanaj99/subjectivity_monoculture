@@ -56,9 +56,11 @@ third_cols = ['meta/llama-3.1-8b-instruct-turbo', 'meta/llama-3.2-11b-vision-ins
 
 all_cols = data.columns
 
-df = pd.read_csv('results/multiplicity/rf_highly_correlated_logistic_small_mlp_d0.csv')
+df = pd.read_csv('results/relativity_population/acsincome_rf_highly_correlated_logistic_small_mlp_d0.csv')
 
-rf_cols = list(df.columns[:10]) + list(df.columns[20:30])
+# This CSV already holds only the 20 highly correlated RFs (dt_cols[:10] + dt_cols[20:30]
+# in scripts/experiments/population_relativity.py), followed by LR, MLP, and q columns.
+rf_cols = [i for i in df.columns if 'randomforestclassifier' in i]
 logistic_cols = [i for i in df.columns if 'logisticregression' in i]
 mlp_cols = [i for i in df.columns if 'mlpclassifier' in i]
 q_cols = [i for i in df.columns if 'q' in i]
@@ -76,8 +78,9 @@ helm_files  = ['results/relativity_population/helm_exp1.pkl',
                'results/helm/helm_latent_p10.pkl']
 helm_titles = ['OpenAI only',
                'OpenAI +\nAnthropic/Writer',
-               'OpenAI +\nAnthropic/Writer +\nMeta/AllenAI/Cohere']
-helm_cols = [openai_cols, openai_cols + second_cols, openai_cols + second_cols + third_cols]
+               'OpenAI +\nAnthropic/Writer +\nMeta/AllenAI/Cohere',
+               'All Models']
+helm_cols = [openai_cols, openai_cols + second_cols, openai_cols + second_cols + third_cols, all_cols]
 
 rf_files  = ['acsincome_only_rf_highly_correlated',
              'acsincome_rf_highly_correlated_logistic_small',

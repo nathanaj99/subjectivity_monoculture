@@ -202,7 +202,7 @@ def main(data_path, fp_out):
     n = Y.shape[0]
     m = Y.shape[1]
     if os.path.exists(fp_out):
-    with open(fp_out, 'rb') as f:
+        with open(fp_out, 'rb') as f:
             results_overall = pickle.load(f)
     else:
         results_overall = {}
@@ -232,5 +232,5 @@ if __name__ == "__main__":
     main(data_path='data/helm/helm_ans.csv', fp_out='results/helm/helm_irt_all_k.pkl')
     main(data_path='data/hf/hf_ans.csv', fp_out='results/hf/hf_irt_all_k.pkl')
 
-    main_one_k(data_path='data/helm/helm_ans.csv', fp_out='results/helm/helm_irt_k2.pkl', k=2)
-    main_one_k(data_path='data/helm/helm_ans.csv', fp_out='results/helm/helm_irt_k2.pkl', k=1)
+    main_one_k(data_path='data/helm/helm_ans.csv', fp_out='results/helm/helm_k2_irt.pkl', k=2)
+    main_one_k(data_path='data/helm/helm_ans.csv', fp_out='results/helm/helm_k1_irt.pkl', k=1)

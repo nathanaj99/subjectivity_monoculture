@@ -49,12 +49,9 @@ m = Y.shape[1]
 save_path = f'results/relativity_population/acsincome_only_rf_highly_correlated.pkl'
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
-with open(f'{save_path}', 'wb') as f:
-    pickle.dump(results, f)
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
 with open(f'{save_path}', 'wb') as f:
     pickle.dump(results, f)
 
@@ -65,15 +62,11 @@ m = Y.shape[1]
 save_path = f'results/relativity_population/acsincome_rf_highly_correlated_logistic_small.pkl'
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
 with open(f'{save_path}', 'wb') as f:
     pickle.dump(results, f)
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
-with open(f'{save_path}', 'wb') as f:
-    pickle.dump(results, f)
-
 
 
 Y = pd.concat([df[dt_cols[:10]], df[dt_cols[20:30]], df[logistic_cols], df[mlp_cols]], axis=1).to_numpy().astype(float)
@@ -82,12 +75,9 @@ m = Y.shape[1]
 save_path = f'results/relativity_population/acsincome_rf_highly_correlated_logistic_small_mlp.pkl'
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
-with open(f'{save_path}', 'wb') as f:
-    pickle.dump(results, f)
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
 with open(f'{save_path}', 'wb') as f:
     pickle.dump(results, f)
 
@@ -99,12 +89,11 @@ print(n, m)
 save_path = f'results/relativity_population/acsincome_rf_highly_correlated_logistic_small_mlp_d0.pkl'
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
 with open(f'{save_path}', 'wb') as f:
     pickle.dump(results, f)
-
-
 
 
 # HELM experiments
@@ -123,48 +112,37 @@ Y = df[starting_models].to_numpy().astype(float)
 n = Y.shape[0]
 m = Y.shape[1]
 
-fp_out = f'results/multiplicity/helm_exp1.pkl'
+fp_out = f'results/relativity_population/helm_exp1.pkl'
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
 with open(fp_out, 'wb') as f:
     pickle.dump(results, f)
 
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
-with open(fp_out, 'wb') as f:
-    pickle.dump(results, f)
 
-
-fp_out = f'results/multiplicity/helm_exp2.pkl'
+fp_out = f'results/relativity_population/helm_exp2.pkl'
 Y = df[starting_models + next_correlated_models].to_numpy().astype(float)
 n = Y.shape[0]
 m = Y.shape[1]
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
 with open(fp_out, 'wb') as f:
     pickle.dump(results, f)
 
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
-with open(fp_out, 'wb') as f:
-    pickle.dump(results, f)
 
-
-fp_out = f'results/multiplicity/helm_exp3.pkl'
+fp_out = f'results/relativity_population/helm_exp3.pkl'
 Y = df[starting_models + next_correlated_models + neg_correlated_models].to_numpy().astype(float)
 n = Y.shape[0]
 m = Y.shape[1]
 
 d_hat, q_hat = neg_probit1pl_batched(Y, n, m, lr=lr)
+results = {}
 results['d'] = d_hat
 results['q'] = q_hat
 with open(fp_out, 'wb') as f:
     pickle.dump(results, f)
 
-v_hat, history = fit_kernel_latent_stream(Y, np.random.standard_normal(size=(m, num_covariates)), q_hat, d_hat, lr=lr)
-results['v'] = v_hat
-with open(fp_out, 'wb') as f:
-    pickle.dump(results, f)

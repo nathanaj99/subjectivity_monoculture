@@ -9,9 +9,6 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_auc_score
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import StandardScaler
@@ -140,46 +137,20 @@ all_predictions = pd.concat([all_predictions, buffer], axis=1)
 
 all_predictions.to_csv(save_path, index=False)
 
-print("Training kNN classifier...")
-# kNN classifier
-knn_params1 = {'n_neighbors': 5, 'weights': 'uniform'}
-knn_params2 = {'n_neighbors': 7, 'weights': 'distance'}
-knn_params3 = {'n_neighbors': 3, 'weights': 'distance'}
-buffer = train_model(KNeighborsClassifier, 1, rng, knn_params1)
-all_predictions = pd.concat([all_predictions, buffer], axis=1)
+# "+ d0" population for Fig. 3: the 20 highly correlated RFs, LR, and MLPs above,
+# plus 25 artificial models that each succeed independently on every test example
+# with a model-specific probability p ~ N(0.7, 0.2) (clipped to [0, 1]).
+rf_cols = [i for i in all_predictions.columns if 'randomforestclassifier' in i]
+logistic_cols = [i for i in all_predictions.columns if 'logisticregression' in i]
+mlp_cols = [i for i in all_predictions.columns if 'mlpclassifier' in i]
+d0_predictions = pd.concat([all_predictions[rf_cols[:10]], all_predictions[rf_cols[20:30]],
+                            all_predictions[logistic_cols], all_predictions[mlp_cols]], axis=1)
 
-buffer = train_model(KNeighborsClassifier, 1, rng, knn_params2)
-all_predictions = pd.concat([all_predictions, buffer], axis=1)
-
-buffer = train_model(KNeighborsClassifier, 1, rng, knn_params3)
-all_predictions = pd.concat([all_predictions, buffer], axis=1)
-
-all_predictions.to_csv(save_path, index=False)
-
+num_d0_models = 25
 rng = np.random.RandomState(42)
-print("Training DecisionTreeClassifier models...")
-DecisionTreeClassifier
-list_of_max_depths = [1, 3, 5, 7, 10]
-list_of_criterion = ['gini', 'entropy']
-list_of_min_samples_split = [2, 5, 10]
-for max_depth in list_of_max_depths:
-    for criterion in list_of_criterion:
-        for min_samples_split in list_of_min_samples_split:
-            dt_params = {'max_depth': max_depth, 'criterion': criterion, 'min_samples_split': min_samples_split}
-            buffer = train_model(DecisionTreeClassifier, num_models, rng, dt_params)
-            all_predictions = pd.concat([all_predictions, buffer], axis=1)
+p_d0 = np.clip(rng.normal(loc=0.7, scale=0.2, size=num_d0_models), 0, 1)
+n_test = len(label_test)
+for j, p in enumerate(p_d0):
+    d0_predictions[f'q{p:.2f}_{j+1}'] = (rng.uniform(size=n_test) < p).astype(int)
 
-all_predictions.to_csv(save_path, index=False)
-
-rng = np.random.RandomState(42)
-print("Training SVC models...")
-# SVC
-svc_params1 = {'C': 0.1, 'kernel': 'linear'}
-svc_params2 = {'C': 1.0, 'kernel': 'rbf'}
-buffer = train_model(SVC, num_models, rng, svc_params1)
-all_predictions = pd.concat([all_predictions, buffer], axis=1)
-
-buffer = train_model(SVC, num_models, rng, svc_params2)
-all_predictions = pd.concat([all_predictions, buffer], axis=1)
-
-all_predictions.to_csv(save_path, index=False)
+d0_predictions.to_csv('results/relativity_population/acsincome_rf_highly_correlated_logistic_small_mlp_d0.csv', index=False)

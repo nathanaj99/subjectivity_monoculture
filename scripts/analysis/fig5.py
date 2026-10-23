@@ -5,6 +5,9 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import norm
+import matplotlib
+
+matplotlib.rcParams['font.size'] = 14
 
 k = 2
 with open(f'results/helm/helm_k{k}_irt.pkl', 'rb') as f:

@@ -384,6 +384,44 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
 
+
+def add_group_brace(fig, axes_group, text, y_offset=-0.06, text_offset=-0.10):
+    """
+    Draws a horizontal brace (line) under a group of axes
+    with centered annotation text.
+    """
+    bboxes = [ax.get_position() for ax in axes_group]
+
+    x0 = min(b.x0 for b in bboxes)
+    x1 = max(b.x1 for b in bboxes)
+    y = min(b.y0 for b in bboxes) + y_offset
+
+    # horizontal line
+    line = plt.Line2D(
+        [x0, x1], [y, y],
+        transform=fig.transFigure,
+        linewidth=2
+    )
+    fig.add_artist(line)
+
+    # small vertical ticks at the ends (optional but nice)
+    tick_h = 0.01
+    fig.add_artist(plt.Line2D([x0, x0], [y, y + tick_h],
+                              transform=fig.transFigure, linewidth=2))
+    fig.add_artist(plt.Line2D([x1, x1], [y, y + tick_h],
+                              transform=fig.transFigure, linewidth=2))
+
+    # centered text
+    fig.text(
+        (x0 + x1) / 2,
+        y + text_offset,
+        text,
+        ha="center",
+        va="top",
+        fontsize=19
+    )
+
+
 # ----- your settings -----
 vmin, vmax = -0.2, 0.6
 cmap_name = "RdBu_r"

@@ -1,0 +1,12 @@
+# Tested with Python 3.11.
+# numpy>=2 is required to unpickle the files in results/.
+# pandas<3 is required: pandas 3 (copy-on-write) makes DataFrame.values read-only,
+# which breaks np.fill_diagonal in scripts/analysis/fig2.py and fig6.py.
+numpy==2.4.6
+pandas==2.3.3
+scipy==1.17.1
+matplotlib==3.11.2
+seaborn==0.13.2
+scikit-learn==1.9.1
+tqdm==4.70.1
+torch==2.14.1

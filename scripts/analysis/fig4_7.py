@@ -5,6 +5,9 @@ import os
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.stats import norm
+import matplotlib
+
+matplotlib.rcParams['font.size'] = 14
 
 
 k_list = [2, 4, 8, 16, 32, 36, 40, 44, 48, 52, 56, 60, 64]
@@ -15,9 +18,11 @@ results = pd.DataFrame(columns=['k', 'mse', 'off_inf', 'off_frob', 'off_median',
 
 n, m = data.shape
 
+with open('results/helm/helm_irt_all_k.pkl', 'rb') as f:
+    params_all_k = pickle.load(f)
+
 for k in k_list:
-    with open(f'results/helm_k{k}_irt.pkl', 'rb') as f:
-        params = pickle.load(f)
+    params = params_all_k[k]
 
     A_hat = params['A']
     b_hat = params['b']

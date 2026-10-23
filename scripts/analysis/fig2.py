@@ -224,7 +224,7 @@ def pairwise_kim_excess_and_capa_variable_k(
 helm = pd.read_csv('data/helm/helm_all_mmlu_data_limitedcols.csv')
 helm['question_id'] = helm['subject'] + '-' + helm['id']
 excess, capa = pairwise_kim_excess_and_capa(helm)
-
+data = pd.read_csv('data/helm/helm_mult_choice_ans.csv').drop(columns=['question_id']).to_numpy()
 P = data.mean(axis=0)
 
 # MSE on probabilities (same as before)
@@ -254,7 +254,7 @@ with np.errstate(divide='ignore', invalid='ignore'):
     R[denom == 0] = 0.0
 
 
-with open('results/helm_mult_choice_latent_p15.pkl', 'rb') as f:
+with open('results/helm/helm_mult_choice.pkl', 'rb') as f:
     params = pickle.load(f)
 mu = params['q'][None, :] - params['d'][:, None]
 
@@ -290,10 +290,12 @@ with np.errstate(divide='ignore', invalid='ignore'):
 
 ###### --- PROCESS HF --- ######
 hf = pd.read_csv('data/hf/hf_model_answers.txt', delimiter=',')
+df = pd.read_csv('data/hf/hf_ans_with_metadata.csv')
+df['doc'] = df['doc'].apply(ast.literal_eval)
+df['num_options'] = df['doc'].apply(lambda x: len(x['options']))
 hf = hf.merge(df[['doc_hash', 'num_options']], on='doc_hash', how='left')
 hf = hf.rename(columns={'doc_hash': 'question_id'})
 excess_hf, capa_hf = pairwise_kim_excess_and_capa_variable_k(hf)
-
 
 
 df = pd.read_csv('data/hf/hf_ans_with_metadata.csv')
@@ -335,7 +337,7 @@ with np.errstate(divide='ignore', invalid='ignore'):
 
 df = pd.read_csv('data/hf/hf_mult_choice_ans.csv')
 df_subset = df.drop(columns=['question_id']).to_numpy()
-with open(f'results/hf_mult_choice.pkl', 'rb') as f:
+with open(f'results/hf/hf_mult_choice.pkl', 'rb') as f:
     params = pickle.load(f)
 q_hat = params['q']
 d_hat = params['d']
@@ -371,9 +373,6 @@ denom = np.outer(std, std)
 with np.errstate(divide='ignore', invalid='ignore'):
     R_1d_hf = C / denom
     R_1d_hf[denom == 0] = 0.0
-
-
-df_subset = df[df.columns[1:-5]].to_numpy()
 
 P = df_subset.mean(axis=0)
 
@@ -404,210 +403,144 @@ with np.errstate(divide='ignore', invalid='ignore'):
     R_hf[denom == 0] = 0.0
 
 
-k = 1
-with open(f'results/hf/hf_k{k}_p15.pkl', 'rb') as f:
-    params = pickle.load(f)
-q_hat = params['q']
-d_hat = params['d']
+# # k = 1
+# with open(f'results/hf/hf_mult_choice.pkl', 'rb') as f:
+#     params = pickle.load(f)
+# q_hat = params['q']
+# d_hat = params['d']
 
-m = q_hat.shape[0]
-n = d_hat.shape[0]
+# m = q_hat.shape[0]
+# n = d_hat.shape[0]
 
-mu = q_hat[None, :] - d_hat[:, None]   # (n, m)
-P = norm.cdf(mu)                            # fitted probs
+# mu = q_hat[None, :] - d_hat[:, None]   # (n, m)
+# P = norm.cdf(mu)                            # fitted probs
 
-# MSE on probabilities (same as before)
-mse = np.mean((P - df_subset) ** 2)
+# # MSE on probabilities (same as before)
+# mse = np.mean((P - df_subset) ** 2)
 
-# --- Raw residuals (no Pearson scaling) ---
-E = df_subset - P                                # (n, m)
+# # --- Raw residuals (no Pearson scaling) ---
+# E = df_subset - P                                # (n, m)
 
-# Debias by removing column means (across items i)
-E_centered = E - E.mean(axis=0, keepdims=True)
+# # Debias by removing column means (across items i)
+# E_centered = E - E.mean(axis=0, keepdims=True)
 
-# n = E.shape[0]
+# # n = E.shape[0]
 
-# Raw residual covariance (population-style, divide by n)
-C = (E_centered.T @ E_centered) / n         # (m, m), set diag to 0 later if desired
+# # Raw residual covariance (population-style, divide by n)
+# C = (E_centered.T @ E_centered) / n         # (m, m), set diag to 0 later if desired
 
-# Residual variances across subjects (items x items diagonal)
-var = np.mean(E_centered**2, axis=0)   # shape (m,)
-std = np.sqrt(var)
+# # Residual variances across subjects (items x items diagonal)
+# var = np.mean(E_centered**2, axis=0)   # shape (m,)
+# std = np.sqrt(var)
 
-# Outer product of stds
-denom = np.outer(std, std)
+# # Outer product of stds
+# denom = np.outer(std, std)
 
-# Avoid division by zero
-with np.errstate(divide='ignore', invalid='ignore'):
-    R_1d_hf = C / denom
-    R_1d_hf[denom == 0] = 0.0
+# # Avoid division by zero
+# with np.errstate(divide='ignore', invalid='ignore'):
+#     R_1d_hf = C / denom
+#     R_1d_hf[denom == 0] = 0.0
 
 
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 from matplotlib.gridspec import GridSpec
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
 
-# ----- your settings -----
+# Replace the original plotting section with this block after computing
+# excess, capa, R, R_1d, excess_hf, capa_hf, R_hf, and R_1d_hf.
 vmin, vmax = -0.2, 0.6
 cmap_name = "RdBu_r"
+titles = ["Kim et al.", "Goel et al.", "IRT-0.5", "IRT-1"]
 
-# HELM (first 3)
-data_list_helm = [excess, capa, R, R_1d]
-titles_helm = ["Kim et al.", "Goel et al.", r"IRT-0.5", "IRT-1"]
-
-# HF (last 3)
-data_list_hf = [
-    excess_hf.to_numpy()[:100, :100],
-    capa_hf.to_numpy()[:100, :100],
-    R_hf[:100, :100],
-    R_1d_hf[:100, :100],
+data_rows = [
+    [excess, capa, R, R_1d],
+    [
+        excess_hf.to_numpy()[:100, :100],
+        capa_hf.to_numpy()[:100, :100],
+        R_hf[:100, :100],
+        R_1d_hf[:100, :100],
+    ],
 ]
-titles_hf = ["Kim et al.", "Goel et al.", r"IRT-0.5", "IRT-1"]
 
-data_list = data_list_helm + data_list_hf
-titles = titles_helm + titles_hf
-
-# ----- layout: 6 plots + colorbar, with a spacer column between 3 and 4 -----
-fig = plt.figure(figsize=(30, 4), constrained_layout=False)
-
-# columns: [0][1][2][spacer][3][4][5][colorbar]
-# make spacer a bit wide; make cbar slim
+# Tight spacing between rows; the left margin holds the dataset labels.
+fig = plt.figure(figsize=(15, 7.5), constrained_layout=False)
 gs = GridSpec(
-    1, 10, figure=fig,
-    width_ratios=[1, 1, 1, 1, 0.005, 1, 1, 1, 1, 0.08],
-    wspace=0.03
+    2, 4, figure=fig,
+    left=0.13, right=0.90, bottom=0.14, top=0.92,
+    wspace=0.035, hspace=0.045,
 )
+axes = np.empty((2, 4), dtype=object)
 
-axes = []
-axes.append(fig.add_subplot(gs[0, 0]))
-axes.append(fig.add_subplot(gs[0, 1]))
-axes.append(fig.add_subplot(gs[0, 2]))
-axes.append(fig.add_subplot(gs[0, 3]))
-# gs[0, 3] is the spacer (unused)
-# axes.append(fig.add_subplot(gs[0, 4]))
-axes.append(fig.add_subplot(gs[0, 5]))
-axes.append(fig.add_subplot(gs[0, 6]))
-axes.append(fig.add_subplot(gs[0, 7]))
-axes.append(fig.add_subplot(gs[0, 8]))
-cax = fig.add_subplot(gs[0, 9])  # colorbar axis
+for row, matrices in enumerate(data_rows):
+    for col, matrix in enumerate(matrices):
+        ax = fig.add_subplot(gs[row, col])
+        axes[row, col] = ax
 
-# ----- draw heatmaps (no individual colorbars) -----
-for ax, data, title in zip(axes, data_list, titles):
-    arr = np.asarray(data)
+        # Copy so masking the diagonal does not modify the input matrices.
+        arr = np.array(matrix, dtype=float, copy=True)
+        np.fill_diagonal(arr, np.nan)
+        sns.heatmap(
+            arr, ax=ax, cmap=cmap_name, center=0,
+            square=True, vmin=vmin, vmax=vmax, cbar=False,
+            xticklabels=False, yticklabels=False,
+        )
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        if row == 0:
+            ax.set_title(titles[col], fontsize=20, pad=9)
 
-    # set diagonal to NaN
-    np.fill_diagonal(arr, np.nan)
+# Resolve the square heatmap positions before placing figure annotations.
+fig.canvas.draw()
 
-    sns.heatmap(
-        arr,
-        ax=ax,
-        cmap=cmap_name,
-        center=0,
-        square=True,
-        vmin=vmin,
-        vmax=vmax,
-        cbar=False,
-        xticklabels=False,
-        yticklabels=False
+# Dataset/panel labels sit to the left, centered vertically in each row.
+for row, label in enumerate(["(a) HELM", "(b) HF"]):
+    box = axes[row, 0].get_position()
+    fig.text(
+        box.x0 - 0.015, (box.y0 + box.y1) / 2, label,
+        ha="right", va="center", fontsize=20, fontweight="bold",
     )
-    ax.set_title(title, fontsize=22)
-    ax.set_xlabel("")
-    ax.set_ylabel("")
 
-# ----- one shared colorbar on the right -----
-mappable = axes[0].collections[0]
-cbar = fig.colorbar(mappable, cax=cax)
+# One slim colorbar, spanning 92% of the combined heatmap height.
+top = axes[0, -1].get_position().y1
+bottom = axes[1, -1].get_position().y0
+bar_margin = 0.04 * (top - bottom)
+cax = fig.add_axes([0.925, bottom + bar_margin,
+                    0.012, (top - bottom) - 2 * bar_margin])
+cbar = fig.colorbar(axes[0, 0].collections[0], cax=cax)
+cbar.ax.tick_params(labelsize=14)
+cbar.set_label("Correlation", fontsize=17, labelpad=12)
 
-# make tick labels larger
-cbar.ax.tick_params(labelsize=16)
-
-cbar.ax.text(
-    -2.5, 1.15,              # (x, y) in axes coords
-    "Correlation",
-    transform=cbar.ax.transAxes,
-    ha="left",
-    va="top",
-    fontsize=19
+# A single downward brace under HF's first three methods.
+# All coordinates are in figure units, independent of matrix size.
+x0 = axes[1, 0].get_position().x0
+x1 = axes[1, 2].get_position().x1
+xmid = (x0 + x1) / 2
+y = bottom - 0.014
+depth = 0.022
+shoulder = 0.025 * (x1 - x0)
+vertices = [
+    (x0, y),
+    (x0, y - depth / 2), (x0, y - depth / 2),
+    (x0 + shoulder, y - depth / 2),
+    (xmid - shoulder, y - depth / 2),
+    (xmid, y - depth / 2), (xmid, y - depth),
+    (xmid, y - depth / 2), (xmid + shoulder, y - depth / 2),
+    (x1 - shoulder, y - depth / 2),
+    (x1, y - depth / 2), (x1, y - depth / 2), (x1, y),
+]
+brace = PathPatch(
+    Path(vertices, [Path.MOVETO] + [Path.CURVE4] * 12),
+    transform=fig.transFigure, fill=False, color="black",
+    linewidth=1.4, clip_on=False,
+)
+fig.add_artist(brace)
+fig.text(
+    xmid, y - depth - 0.009, "No item-level heterogeneity",
+    ha="center", va="top", fontsize=18,
 )
 
-# cbar.ax.set_title(
-#     "Correlation",
-#     fontsize=20,
-#     pad=15
-# )
-
-# add colorbar label
-# cbar.set_label(
-#     "Correlation",
-#     fontsize=16,
-#     rotation=90,
-#     labelpad=10
-# )
-
-# ----- dataset labels (bold, rotated) -----
-# Put HELM just left of the first panel; HF just left of the 4th panel
-# axes[0].text(
-#     -0.05, 0.5, "HELM",
-#     transform=axes[0].transAxes,
-#     rotation=90,
-#     va="center", ha="center",
-#     fontweight="bold", fontsize=18
-# )
-# axes[4].text(
-#     -0.05, 0.5, "HF",
-#     transform=axes[4].transAxes,
-#     rotation=90,
-#     va="center", ha="center",
-#     fontweight="bold", fontsize=18
-# )
-
-# -----------------------
-# Panel labels (a) and (b)
-# -----------------------
-axes[0].text(
-    0.02, 1.22, "(a) HELM",
-    transform=axes[0].transAxes,
-    ha="left", va="top",
-    fontsize=22, fontweight="bold"
-)
-axes[4].text(
-    0.02, 1.22, "(b) HF",
-    transform=axes[4].transAxes,
-    ha="left", va="top",
-    fontsize=22, fontweight="bold"
-)
-
-# HELM: first three subplots
-add_group_brace(
-    fig,
-    y_offset=-0.02,
-    text_offset=-0.03,
-    axes_group=axes[0:3],
-    text="No item-level heterogeneity"
-)
-
-# HF: first three subplots in panel (b)
-add_group_brace(
-    fig,
-    y_offset=-0.02,
-    text_offset=-0.03,
-    axes_group=axes[4:7],
-    text="No item-level heterogeneity"
-)
-
-
-
-# ----- vertical delimiter between panel 3 and 4 -----
-# Draw it in figure coordinates so it spans the full heatmap height region.
-fig.canvas.draw()  # ensure positions are computed
-bbox3 = axes[3].get_position()
-bbox4 = axes[4].get_position()
-
-x = (bbox3.x1 + bbox4.x0) / 2.0  # center of the spacer gap
-y0 = min(bbox3.y0, bbox4.y0) - 0.05
-y1 = max(bbox3.y1, bbox4.y1) + 0.05
-
-line = plt.Line2D([x, x], [y0, y1], transform=fig.transFigure, linewidth=2)
-fig.add_artist(line)
-plt.savefig('figs/fig2.png', bbox_inches='tight')
+plt.savefig("figs/fig2.png", bbox_inches="tight")
 plt.show()
